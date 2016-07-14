@@ -59,7 +59,6 @@ class PandocTask extends DefaultTask {
 		File src = project.file(srcDir)
 		def pandocArgs = [
 			'-S',
-			'-f', 'commonmark',
 			'-t', type,
 			'-o', "${project.buildDir}/${baseName}.${extension}"
 		];
