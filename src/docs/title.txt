@@ -1,0 +1,15 @@
+---
+title:
+- type: main
+  text: Sample Book
+- type: subtitle
+  text: A sampling of CommonMark book synthesis
+creator:
+- role: author
+  text: Bryan Elliott
+identifier:
+- scheme: URN
+  text: https://github.com/Fordi/commonDoc
+publisher: Bryan Elliott
+rights: ⓒ 2016 Bryan Elliott, CC-BY-SA 3.0
+...

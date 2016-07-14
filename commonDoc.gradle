@@ -1,0 +1,96 @@
+//apply plugin: 'maven'
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'org.yaml:snakeyaml:1.17'
+	}
+}
+import org.yaml.snakeyaml.Yaml;
+class PandocTask extends DefaultTask {
+	String srcDir = 'src/docs'
+	String type = 'epub'
+	String extension = 'epub'
+	String baseName = null
+	Task configure(Closure cl) {
+		cl.delegate = this
+		cl.resolveStrategy = Closure.DELEGATE_FIRST
+		cl()
+		if (!project.buildDir.exists()) {
+			project.buildDir.mkdirs()
+		}
+		File src = project.file(srcDir)
+		File titleFile = new File(src, "title.txt")
+		if (titleFile.exists()) {
+			inputs.file titleFile
+		}
+		inputs.files project.fileTree(src).include('**/*.md').include('**/*.png')
+
+		if (titleFile.exists() && baseName == null) {
+			Yaml titleData = new Yaml()
+			titleFile.withReader { reader ->
+				titleData.load(reader).each { entry ->
+					if ('title'.equals(entry.key)) {
+						entry.value.each { title ->
+							if (title instanceof String) {
+								baseName = title
+							} else if ('main'.equals(title.type)) {
+								baseName = title.text
+							}
+						}
+					}
+				}
+			}
+			if (baseName != null) {
+				baseName = baseName.replaceAll('[:/\\\\<>]', '_');
+			} else {
+				baseName = "output"
+			}
+		}
+		File tgt = new File(project.buildDir, "${baseName}.${extension}")
+		//println "Declaring output file: ${tgt}"
+		outputs.file tgt
+		return this;
+	}
+
+	@TaskAction
+	def compose() {
+		File src = project.file(srcDir)
+		def pandocArgs = [
+			'-S',
+			'-f', 'commonmark',
+			'-t', type,
+			'-o', "${project.buildDir}/${baseName}.${extension}"
+		];
+		File titleFile = new File(src, "title.txt")
+		if (titleFile.exists()) {
+			pandocArgs.add(titleFile.toString())
+		}
+		project.fileTree(src).include('**/*.md').each{File file ->
+			pandocArgs.add(file.toString())
+		}
+		project.exec {
+			executable 'pandoc'
+			args pandocArgs
+		}
+	}
+}
+
+task epub (type: PandocTask) {
+	type = 'epub3'
+	extension = 'epub'
+}
+task docx (type: PandocTask) {
+	type = 'docx'
+	extension = 'docx'
+}
+task html5 (type: PandocTask) {
+	type = 'html5'
+	extension = 'html'
+}
+task odt (type: PandocTask) {
+	type = 'odt'
+	extension = 'odt'
+}
+
